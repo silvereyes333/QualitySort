@@ -57,7 +57,7 @@ function QualitySort.addSortByQuality(inventoryID)
     local inventory = PLAYER_INVENTORY.inventories[inventoryID]
     QualitySort.initCustomInventorySortFn(inventory)
     inventory.sortHeaders:AddHeader(qualityHeader)
-end 
+end
 
 function QualitySort.onAddonLoaded(eventCode, addonName)
     if addonName ~= QualitySort.name then return end

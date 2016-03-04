@@ -1,6 +1,6 @@
 ## Title: Quality Sort
 ## Author: Randactyl
-## Version: 1.0.0.5
-## APIVersion: 100013
+## Version: 1.0.1.0
+## APIVersion: 100014
 
 QualitySort.lua

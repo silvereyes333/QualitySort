@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.0.0.5"
+QualitySort.version = "1.0.1.0"
 
 function QualitySort.orderByItemQuality(data1, data2)
     local link1 = GetItemLink(data1.bagId, data1.slotIndex)

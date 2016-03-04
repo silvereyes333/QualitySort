@@ -16,7 +16,6 @@ function QualitySort.orderByItemQuality(data1, data2)
         return quality2 < quality1
     end
 end
-
 function QualitySort.initCustomInventorySortFn(inventory)
     inventory.sortFn = function(entry1, entry2)
         local sortKey = inventory.currentSortKey
@@ -35,7 +34,6 @@ function QualitySort.initCustomInventorySortFn(inventory)
         return res
     end
 end
-
 function QualitySort.addSortByQuality(inventoryID)
 	local invSortBy
 	if inventoryID == INVENTORY_BACKPACK then
@@ -52,7 +50,7 @@ function QualitySort.addSortByQuality(inventoryID)
     qualityHeader:SetAnchor(RIGHT, nameHeader, LEFT, -35, 0)
     qualityHeader:SetDimensions(16, 32)
     ZO_SortHeader_InitializeArrowHeader(qualityHeader, QualitySort.orderByItemQuality, ZO_SORT_ORDER_UP)
-    ZO_SortHeader_SetTooltip(qualityHeader, "Quality")
+    ZO_SortHeader_SetTooltip(qualityHeader, "Quality", BOTTOMRIGHT, 0, 32)
 
     local inventory = PLAYER_INVENTORY.inventories[inventoryID]
     QualitySort.initCustomInventorySortFn(inventory)

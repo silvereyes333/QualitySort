@@ -2,10 +2,36 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.2.0.0"
+QualitySort.version = "1.2.1.0"
 
-QUALITYSORT_INVENTORY_QUICKSLOT = 100
+QUALITYSORT_INVENTORY_QUICKSLOT  = 100
+QUALITYSORT_CRAFTING_DECON       = 200
+QUALITYSORT_CRAFTING_ENCHANTING  = 201
+QUALITYSORT_CRAFTING_IMPROVEMENT = 202
+QUALITYSORT_CRAFTING_REFINEMENT  = 203
 
+function QualitySort.getSortByHeader(flag)
+    if flag == INVENTORY_BACKPACK then
+        return ZO_PlayerInventorySortBy
+    elseif flag == INVENTORY_BANK then
+        return ZO_PlayerBankSortBy
+    elseif flag == INVENTORY_GUILD_BANK then
+        return ZO_GuildBankSortBy
+    elseif flag == INVENTORY_CRAFT_BAG then
+        return ZO_CraftBagSortBy
+    elseif flag == QUALITYSORT_INVENTORY_QUICKSLOT then
+        return ZO_QuickSlotSortBy
+    elseif flag == QUALITYSORT_CRAFTING_DECON then
+        return ZO_SmithingTopLevelDeconstructionPanelInventorySortBy
+    elseif flag == QUALITYSORT_CRAFTING_ENCHANTING then
+        return ZO_EnchantingTopLevelInventorySortBy
+    elseif flag == QUALITYSORT_CRAFTING_IMPROVEMENT then
+        return ZO_SmithingTopLevelImprovementPanelInventorySortBy
+    elseif flag == QUALITYSORT_CRAFTING_REFINEMENT then
+        return ZO_SmithingTopLevelRefinementPanelInventorySortBy
+    end
+    return nil
+end
 function QualitySort.orderByItemQuality(data1, data2)
     local link1 = GetItemLink(data1.bagId, data1.slotIndex)
     local link2 = GetItemLink(data2.bagId, data2.slotIndex)
@@ -39,40 +65,31 @@ function QualitySort.initCustomInventorySortFn(inventory)
         return sortFunction(entry1, entry2, sortKey, sortOrder)
     end
 end
-function QualitySort.initCustomQuickSlotSortFn()
-    QUICKSLOT_WINDOW.sortFunction = function(entry1, entry2)
-        local sortKey = QUICKSLOT_WINDOW.sortHeaders:GetCurrentSortKey()
-        local sortOrder = QUICKSLOT_WINDOW.sortHeaders:GetSortDirection()
+function QualitySort.initSortFunction(owner)
+    owner.sortFunction = function(entry1, entry2)
+        local sortKey = owner.sortHeaders:GetCurrentSortKey()
+        local sortOrder = owner.sortHeaders:GetSortDirection()
         return sortFunction(entry1, entry2, sortKey, sortOrder)
     end
 end
-function QualitySort.addSortByQuality(inventoryID)
-	local invSortBy
-	if inventoryID == INVENTORY_BACKPACK then
-    	invSortBy = ZO_PlayerInventorySortBy
-    elseif inventoryID == INVENTORY_BANK then
-   		invSortBy = ZO_PlayerBankSortBy
-   	elseif inventoryID == INVENTORY_GUILD_BANK then
-    	invSortBy = ZO_GuildBankSortBy
-   	elseif inventoryID == INVENTORY_CRAFT_BAG then
-    	invSortBy = ZO_CraftBagSortBy
-   	elseif inventoryID == QUALITYSORT_INVENTORY_QUICKSLOT then
-    	invSortBy = ZO_QuickSlotSortBy
-    end
+function QualitySort.addSortByQuality(flag)
+    local sortByControl = QualitySort.getSortByHeader(flag)
 
-    local nameHeader = invSortBy:GetNamedChild("Name")
-    local qualityHeader = CreateControlFromVirtual("$(parent)Quality", invSortBy, "ZO_SortHeaderIcon")
+    local nameHeader = sortByControl:GetNamedChild("Name")
+    local qualityHeader = CreateControlFromVirtual("$(parent)Quality", sortByControl, "ZO_SortHeaderIcon")
 
     qualityHeader:SetAnchor(RIGHT, nameHeader, LEFT, -35, 0)
     qualityHeader:SetDimensions(16, 32)
     ZO_SortHeader_InitializeArrowHeader(qualityHeader, QualitySort.orderByItemQuality, ZO_SORT_ORDER_UP)
     ZO_SortHeader_SetTooltip(qualityHeader, "Quality", BOTTOMRIGHT, 0, 32)
 
-    if inventoryID == QUALITYSORT_INVENTORY_QUICKSLOT then
-        QualitySort.initCustomQuickSlotSortFn()
-        QUICKSLOT_WINDOW.sortHeaders:AddHeader(qualityHeader)
+    if flag >= QUALITYSORT_INVENTORY_QUICKSLOT then
+        local inventory = sortByControl:GetParent()
+        local owner = inventory.owner
+        QualitySort.initSortFunction(owner)
+        owner.sortHeaders:AddHeader(qualityHeader)
     else
-        local inventory = PLAYER_INVENTORY.inventories[inventoryID]
+        local inventory = PLAYER_INVENTORY.inventories[flag]
         QualitySort.initCustomInventorySortFn(inventory)
         inventory.sortHeaders:AddHeader(qualityHeader)
     end
@@ -83,11 +100,16 @@ function QualitySort.onAddonLoaded(eventCode, addonName)
 
     EVENT_MANAGER:UnregisterForEvent("QualitySort", EVENT_ADD_ON_LOADED, QualitySort.onAddonLoaded)
 
+    ZO_QuickSlot.owner = QUICKSLOT_WINDOW
     QualitySort.addSortByQuality(INVENTORY_BACKPACK)
     QualitySort.addSortByQuality(INVENTORY_BANK)
     QualitySort.addSortByQuality(INVENTORY_GUILD_BANK)
     QualitySort.addSortByQuality(INVENTORY_CRAFT_BAG)
     QualitySort.addSortByQuality(QUALITYSORT_INVENTORY_QUICKSLOT)
+    QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_DECON)
+    QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_ENCHANTING)
+    QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_IMPROVEMENT)
+    QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_REFINEMENT)
 end
 
 EVENT_MANAGER:RegisterForEvent("QualitySort", EVENT_ADD_ON_LOADED, QualitySort.onAddonLoaded)

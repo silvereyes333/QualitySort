@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.2.1.0"
+QualitySort.version = "1.3.0.0"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
@@ -76,12 +76,13 @@ function QualitySort.addSortByQuality(flag)
     local sortByControl = QualitySort.getSortByHeader(flag)
 
     local nameHeader = sortByControl:GetNamedChild("Name")
-    local qualityHeader = CreateControlFromVirtual("$(parent)Quality", sortByControl, "ZO_SortHeaderIcon")
-
-    qualityHeader:SetAnchor(RIGHT, nameHeader, LEFT, -35, 0)
-    qualityHeader:SetDimensions(16, 32)
-    ZO_SortHeader_InitializeArrowHeader(qualityHeader, QualitySort.orderByItemQuality, ZO_SORT_ORDER_UP)
-    ZO_SortHeader_SetTooltip(qualityHeader, "Quality", BOTTOMRIGHT, 0, 32)
+    local qualityHeader = CreateControlFromVirtual("$(parent)Quality", sortByControl, "ZO_SortHeader")
+    
+    qualityHeader:SetAnchor(LEFT, nameHeader, LEFT, 38, 0)
+    qualityHeader:SetDimensions(100, 20)
+    
+    ZO_SortHeader_Initialize(qualityHeader, GetString(SI_GAMEPAD_TRADING_HOUSE_BROWSE_QUALITY), QualitySort.orderByItemQuality,
+                             ZO_SORT_ORDER_UP, TEXT_ALIGN_RIGHT, "ZoFontHeader")
 
     if flag >= QUALITYSORT_INVENTORY_QUICKSLOT then
         local inventory = sortByControl:GetParent()

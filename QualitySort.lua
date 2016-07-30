@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.3.0.0"
+QualitySort.version = "1.3.1.1"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
@@ -72,14 +72,62 @@ function QualitySort.initSortFunction(owner)
         return sortFunction(entry1, entry2, sortKey, sortOrder)
     end
 end
+local function Prehook_NameHeader_SetWidth(nameHeader, width)
+    return true
+end
+local function ShiftRightAnchorOffsetX(header, relativeTo, shiftX, qualityHeader)
+    if header == relativeTo or header == qualityHeader then
+        return
+    end
+    local isValidAnchor, point, anchorRelativeTo, relativePoint, offsetX, offsetY, anchorConstrains = header:GetAnchor(0)
+    if not isValidAnchor or anchorRelativeTo ~= relativeTo then
+        return
+    end
+    if (relativePoint == RIGHT or relativePoint == TOPRIGHT or relativePoint == BOTTOMRIGHT) then
+        header:ClearAnchors()
+        -- If the original offset is less than the width of the quality header, 
+        -- just anchor it to the right of the quality header instead
+        local leftPoint = offsetX + shiftX
+        if point == RIGHT or point == TOPRIGHT or point == BOTTOMRIGHT then
+            leftPoint = leftPoint - header:GetWidth()
+        end
+        
+        if leftPoint < qualityHeader:GetWidth() then
+            header:SetAnchor(LEFT, qualityHeader, relativePoint, 0, offsetY, anchorConstrains)
+        
+        -- Otherwise, shift the original anchor
+        else
+            header:SetAnchor(point, relativeTo, relativePoint, offsetX + shiftX, offsetY, anchorConstrains)
+        end
+    end
+end
 function QualitySort.addSortByQuality(flag)
+    local newNameWidth = 80
+    local qualityWidth = 80
     local sortByControl = QualitySort.getSortByHeader(flag)
-
     local nameHeader = sortByControl:GetNamedChild("Name")
+    local nameWidth = nameHeader:GetWidth()
+    local shiftX = nameWidth - newNameWidth
+    
+    -- Make the name header narrower to avoid overlap with the quality header.
+    nameHeader:SetWidth(newNameWidth)
+    
+    -- Disable changing the name header's width again
+    ZO_PreHook(nameHeader, "SetWidth", Prehook_NameHeader_SetWidth)
+    
+    -- Create the quality header
     local qualityHeader = CreateControlFromVirtual("$(parent)Quality", sortByControl, "ZO_SortHeader")
     
-    qualityHeader:SetAnchor(LEFT, nameHeader, LEFT, 38, 0)
-    qualityHeader:SetDimensions(100, 20)
+    -- Anchor the quality header to the right side of the name header
+    qualityHeader:SetAnchor(LEFT, nameHeader, RIGHT)
+    qualityHeader:SetDimensions(qualityWidth, 20)
+
+    -- Shift all headers that are anchored to the right side of the name header
+    -- over to account for the decreased name header width.
+    for i=1,sortByControl:GetNumChildren() do
+        local child = sortByControl:GetChild(i)
+        ShiftRightAnchorOffsetX(child, nameHeader, shiftX, qualityHeader)
+    end
     
     ZO_SortHeader_Initialize(qualityHeader, GetString(SI_GAMEPAD_TRADING_HOUSE_BROWSE_QUALITY), QualitySort.orderByItemQuality,
                              ZO_SORT_ORDER_UP, TEXT_ALIGN_RIGHT, "ZoFontHeader")
@@ -90,6 +138,7 @@ function QualitySort.addSortByQuality(flag)
         QualitySort.initSortFunction(owner)
         owner.sortHeaders:AddHeader(qualityHeader)
     else
+    
         local inventory = PLAYER_INVENTORY.inventories[flag]
         QualitySort.initCustomInventorySortFn(inventory)
         inventory.sortHeaders:AddHeader(qualityHeader)

@@ -1,6 +1,7 @@
 ## Title: Quality Sort
-## Author: Randactyl
-## Version: 1.0.1.0
-## APIVersion: 100014
+## Author: |cEFEBBERandactyl|r & |c99CCEFsilvereyes|r
+## Version: 1.4.0.0
+## APIVersion: 100017 100018
+## OptionalDependsOn: wykkydsEquipmentLevel CraftingMaterialLevelDisplay
 
 QualitySort.lua

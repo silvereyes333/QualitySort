@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.4.0.0"
+QualitySort.version = "1.4.1.0"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
@@ -32,66 +32,79 @@ function QualitySort.getSortByHeader(flag)
     end
     return nil
 end
+local extendedDataCache = {}
+local function GetExtendedData(data)
+    local itemInstanceId = data.itemInstanceId or GetItemInstanceId(data.bagId, data.slotIndex)
+    if extendedDataCache[itemInstanceId] then
+        return extendedDataCache[itemInstanceId]
+    end
+    local extendedData = { 
+        itemInstanceId = itemInstanceId,
+        bagId = data.bagId, 
+        slotIndex = data.slotIndex, 
+    }
+    local link = GetItemLink(extendedData.bagId, extendedData.slotIndex)
+    extendedData.championRank = GetItemLinkRequiredChampionPoints(link)
+    extendedData.traitInfo = GetItemLinkTraitInfo(link)
+    extendedData.hasCharges, extendedData.enchantment = GetItemLinkEnchantInfo(link)
+    extendedData.itemStyle = GetItemLinkItemStyle(link)
+    if itemInstanceId ~= nil then
+        extendedDataCache[itemInstanceId] = extendedData
+    end
+    return extendedData
+end
+local function NilOrLessThan(value1, value2)
+    if value1 == nil then
+        return true
+    elseif value2 == nil then
+        return false
+    else
+        return value1 < value2
+    end
+end
 function QualitySort.orderByItemQuality(data1, data2)
-    local link1 = GetItemLink(data1.bagId, data1.slotIndex)
-    local link2 = GetItemLink(data2.bagId, data2.slotIndex)
-    local instanceId1 = GetItemInstanceId(data1.bagId, data1.slotIndex)
-    local instanceId2 = GetItemInstanceId(data2.bagId, data2.slotIndex)
-
+    
     -- Sort first by quality
-    local quality1 = GetItemLinkQuality(link1)
-    local quality2 = GetItemLinkQuality(link2)
-    if quality2 ~= quality1 then
-        return quality2 < quality1
+    if data2.quality ~= data1.quality then
+        return NilOrLessThan(data2.quality, data1.quality)
     end
     
     -- Then by name
-    local name1 = GetItemLinkName(link1)
-    local name2 = GetItemLinkName(link2)
-    if name1 ~= name2 then
-        return name1 < name2
+    if data1.name ~= data2.name then
+        return NilOrLessThan(data1.name, data2.name)
     end
     
     -- Then by level
-    local level1 = GetItemLinkRequiredLevel(link1)
-    local level2 = GetItemLinkRequiredLevel(link2)
-    if level1 ~= level2 then
-        return level1 < level2
+    if data1.requiredLevel ~= data2.requiredLevel then
+        return NilOrLessThan(data1.requiredLevel, data2.requiredLevel)
     end
     
+    -- Get extended data for the two data slots
+    local exData1 = GetExtendedData(data1)
+    local exData2 = GetExtendedData(data2)
+    
     -- Then by champion rank
-    local championRank1 = GetItemLinkRequiredChampionPoints(link1)
-    local championRank2 = GetItemLinkRequiredChampionPoints(link2)
-    if championRank1 ~= championRank2 then
-        return championRank1 < championRank2
+    if exData1.championRank ~= exData2.championRank then
+        return NilOrLessThan(exData1.championRank, exData2.championRank)
     end
     
     -- Then by trait
-    local trait1 = GetItemLinkTraitInfo(link1)
-    local trait2 = GetItemLinkTraitInfo(link2)
-    if trait1 ~= trait2 then
-        return trait1 < trait2
+    if exData1.traitInfo ~= exData2.traitInfo then
+        return NilOrLessThan(exData1.traitInfo, exData2.traitInfo)
     end
     
     -- Then by enchant
-    local hasCharges1, enchant1 = GetItemLinkEnchantInfo(link1)
-    local hasCharges2, enchant2 = GetItemLinkEnchantInfo(link2)
-    if enchant1 ~= enchant2 then
-        return enchant1 < enchant2
+    if exData1.enchantment ~= exData2.enchantment then
+        return NilOrLessThan(exData1.enchantment, exData2.enchantment)
     end
 
     -- Then by style
-    local style1 = GetItemLinkItemStyle(link1)
-    local style2 = GetItemLinkItemStyle(link2)
-    if style1 ~= style2 then
-        return style1 < style2
+    if exData1.itemStyle ~= exData2.itemStyle then
+        return NilOrLessThan(exData1.itemStyle, exData2.itemStyle)
     end
 
     -- And finally, sort by item instance id, to make sure relative order stays the same on update
-    if not instanceId1 then
-        return true
-    end
-    return instanceId1 < instanceId2
+    return NilOrLessThan(exData1.itemInstanceId, exData2.itemInstanceId)
 end
 local function sortFunction(entry1, entry2, sortKey, sortOrder)
     local res
@@ -148,6 +161,29 @@ local function ShiftRightAnchorOffsetX(header, relativeTo, shiftX, qualityHeader
         else
             header:SetAnchor(point, relativeTo, relativePoint, offsetX + shiftX, offsetY, anchorConstrains)
         end
+    end
+end
+local function GetBagIdForInventoryType(inventoryType)
+    for bagId, bagInventoryType in pairs(PLAYER_INVENTORY.bagToInventoryType) do
+        if inventoryType == bagInventoryType then
+            return bagId
+        end
+    end
+end
+local function PurgeCacheForInventoryType(inventoryManager, inventoryType)
+    if inventoryType == INVENTORY_QUEST_ITEM then return end
+    local bagId = GetBagIdForInventoryType(inventoryType)
+    if not bagId then return end
+    local bagCache = SHARED_INVENTORY:GetOrCreateBagCache(bagId)
+    local itemsToPurge = {}
+    for itemInstanceId, extendedData in pairs(extendedDataCache) do
+        local slotData = bagCache[extendedData.slotIndex]
+        if not slotData or slotData.itemInstanceId ~= itemInstanceId then
+            table.insert(itemsToPurge, itemInstanceId)
+        end
+    end
+    for i=1, #itemsToPurge do
+        extendedDataCache[itemsToPurge[i]] = nil
     end
 end
 function QualitySort.addSortByQuality(flag)
@@ -214,6 +250,7 @@ function QualitySort.onAddonLoaded(eventCode, addonName)
     QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_ENCHANTING)
     QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_IMPROVEMENT)
     QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_REFINEMENT)
+    ZO_PreHook(PLAYER_INVENTORY, "ApplySort", PurgeCacheForInventoryType)
     SLASH_COMMANDS["/qualitysort"] = QualitySort.printVersion
 end
 

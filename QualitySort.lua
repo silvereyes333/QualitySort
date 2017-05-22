@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.4.1.0"
+QualitySort.version = "1.5.0.0"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
@@ -32,24 +32,48 @@ function QualitySort.getSortByHeader(flag)
     end
     return nil
 end
-local extendedDataCache = {}
+QualitySort.extendedDataCache = {}
+local extendedDataCache = QualitySort.extendedDataCache
 local function GetExtendedData(data)
-    local itemInstanceId = data.itemInstanceId or GetItemInstanceId(data.bagId, data.slotIndex)
-    if extendedDataCache[itemInstanceId] then
-        return extendedDataCache[itemInstanceId]
+    local uniqueId = zo_getSafeId64Key(data.uniqueId or GetItemUniqueId(data.bagId, data.slotIndex))
+    if extendedDataCache[uniqueId] then
+        return extendedDataCache[uniqueId]
     end
     local extendedData = { 
-        itemInstanceId = itemInstanceId,
+        uniqueId = uniqueId,
         bagId = data.bagId, 
-        slotIndex = data.slotIndex, 
+        slotIndex = data.slotIndex,
     }
     local link = GetItemLink(extendedData.bagId, extendedData.slotIndex)
+    local _, _, _, itemId, _, _, 
+          enchantType, enchantSubType, enchantLevel, writ1, writ2, writ3, writ4, writ5, writ6, 
+          itemStyle, _, _, _, charges, vouchers = ZO_LinkHandler_ParseLink(link)
+    extendedData.itemId = tonumber(itemId)
+    extendedData.link = link
     extendedData.championRank = GetItemLinkRequiredChampionPoints(link)
     extendedData.traitInfo = GetItemLinkTraitInfo(link)
-    extendedData.hasCharges, extendedData.enchantment = GetItemLinkEnchantInfo(link)
     extendedData.itemStyle = GetItemLinkItemStyle(link)
-    if itemInstanceId ~= nil then
-        extendedDataCache[itemInstanceId] = extendedData
+    if charges and tonumber(charges) > 0 then
+        extendedData.enchantment = {
+            charges = tonumber(charges),
+            type = tonumber(enchantType),
+            subType = tonumber(enchantSubType),
+            level = tonumber(enchantLevel),
+        }
+    end
+    if data.itemType == ITEMTYPE_MASTER_WRIT then
+        extendedData.masterWrit = {
+            writ1 = tonumber(writ1), 
+            writ2 = tonumber(writ2), 
+            writ3 = tonumber(writ3), 
+            writ4 = tonumber(writ4), 
+            writ5 = tonumber(writ5), 
+            writ6 = tonumber(writ6),
+            vouchers = math.max(2, tonumber(string.format("%.0f", tonumber(vouchers)/10000)))
+        }
+    end
+    if uniqueId ~= nil then
+        extendedDataCache[uniqueId] = extendedData
     end
     return extendedData
 end
@@ -60,6 +84,36 @@ local function NilOrLessThan(value1, value2)
         return false
     else
         return value1 < value2
+    end
+end
+local function CompareEnchantments(enchant1, enchant2)
+    if enchant1 == nil then
+        return true
+    elseif enchant2 == nil then
+        return false
+    elseif enchant1.type ~= enchant2.type then
+        return NilOrLessThan(enchant1.type, enchant2.type)
+    elseif enchant1.subType ~= enchant2.subType then
+        return NilOrLessThan(enchant1.subType, enchant2.subType)
+    else
+        return NilOrLessThan(enchant1.charges, enchant2.charges)
+    end
+end
+local function CompareMasterWrits(writ1, writ2)
+    if writ1.vouchers ~= writ2.vouchers then
+        return NilOrLessThan(writ1.vouchers, writ2.vouchers)
+    elseif writ1.writ1 ~= writ2.writ1 then
+        return NilOrLessThan(writ1.writ1, writ2.writ1)
+    elseif writ1.writ2 ~= writ2.writ2 then
+        return NilOrLessThan(writ1.writ2, writ2.writ2)
+    elseif writ1.writ3 ~= writ2.writ3 then
+        return NilOrLessThan(writ1.writ3, writ2.writ3)
+    elseif writ1.writ4 ~= writ2.writ4 then
+        return NilOrLessThan(writ1.writ4, writ2.writ4)
+    elseif writ1.writ5 ~= writ2.writ5 then
+        return NilOrLessThan(writ1.writ5, writ2.writ5)
+    else
+        return NilOrLessThan(writ1.writ6, writ2.writ6)
     end
 end
 function QualitySort.orderByItemQuality(data1, data2)
@@ -95,7 +149,7 @@ function QualitySort.orderByItemQuality(data1, data2)
     
     -- Then by enchant
     if exData1.enchantment ~= exData2.enchantment then
-        return NilOrLessThan(exData1.enchantment, exData2.enchantment)
+        return CompareEnchantments(exData1.enchantment, exData2.enchantment)
     end
 
     -- Then by style
@@ -103,8 +157,18 @@ function QualitySort.orderByItemQuality(data1, data2)
         return NilOrLessThan(exData1.itemStyle, exData2.itemStyle)
     end
 
-    -- And finally, sort by item instance id, to make sure relative order stays the same on update
-    return NilOrLessThan(exData1.itemInstanceId, exData2.itemInstanceId)
+    -- Then by item id
+    if exData1.itemId ~= exData2.itemId then
+        return NilOrLessThan(exData1.itemId, exData2.itemId)
+    end
+
+    -- Then by master writ
+    if exData1.masterWrit ~= nil and exData2.masterWrit ~= nil then
+        return CompareMasterWrits(exData1.masterWrit, exData2.masterWrit)
+    end
+
+    -- And finally, sort by item unique id, to make sure relative order stays the same on update
+    return NilOrLessThan(exData1.uniqueId, exData2.uniqueId)
 end
 local function sortFunction(entry1, entry2, sortKey, sortOrder)
     local res
@@ -176,10 +240,10 @@ local function PurgeCacheForInventoryType(inventoryManager, inventoryType)
     if not bagId then return end
     local bagCache = SHARED_INVENTORY:GetOrCreateBagCache(bagId)
     local itemsToPurge = {}
-    for itemInstanceId, extendedData in pairs(extendedDataCache) do
+    for uniqueId, extendedData in pairs(extendedDataCache) do
         local slotData = bagCache[extendedData.slotIndex]
-        if not slotData or slotData.itemInstanceId ~= itemInstanceId then
-            table.insert(itemsToPurge, itemInstanceId)
+        if not slotData or zo_getSafeId64Key(slotData.uniqueId) ~= uniqueId then
+            table.insert(itemsToPurge, uniqueId)
         end
     end
     for i=1, #itemsToPurge do

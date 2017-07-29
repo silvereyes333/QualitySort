@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.5.0.0"
+QualitySort.version = "1.5.1.0"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
@@ -61,7 +61,7 @@ local function GetExtendedData(data)
             level = tonumber(enchantLevel),
         }
     end
-    if data.itemType == ITEMTYPE_MASTER_WRIT then
+    if data.itemType == ITEMTYPE_MASTER_WRIT and vouchers then
         extendedData.masterWrit = {
             writ1 = tonumber(writ1), 
             writ2 = tonumber(writ2), 

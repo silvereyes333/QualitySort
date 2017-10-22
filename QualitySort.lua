@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.5.1.0"
+QualitySort.version = "1.5.1.1"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200

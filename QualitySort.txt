@@ -1,7 +1,7 @@
 ## Title: Quality Sort
 ## Author: |cEFEBBERandactyl|r & |c99CCEFsilvereyes|r
-## Version: 1.5.1.2
-## APIVersion: 100021 100022
+## Version: 1.6.0.0
+## APIVersion: 100022 100023
 ## OptionalDependsOn: wykkydsEquipmentLevel CraftingMaterialLevelDisplay
 
 QualitySort.lua

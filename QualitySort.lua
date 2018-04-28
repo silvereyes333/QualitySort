@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.5.1.2"
+QualitySort.version = "1.6.0.0"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
@@ -19,6 +19,8 @@ function QualitySort.getSortByHeader(flag)
         return ZO_GuildBankSortBy
     elseif flag == INVENTORY_CRAFT_BAG then
         return ZO_CraftBagSortBy
+    elseif flag == INVENTORY_HOUSE_BANK then
+        return ZO_HouseBankSortBy
     elseif flag == QUALITYSORT_INVENTORY_QUICKSLOT then
         return ZO_QuickSlotSortBy
     elseif flag == QUALITYSORT_CRAFTING_DECON then
@@ -259,6 +261,7 @@ function QualitySort.onAddonLoaded(eventCode, addonName)
     QualitySort.addSortByQuality(INVENTORY_BANK)
     QualitySort.addSortByQuality(INVENTORY_GUILD_BANK)
     QualitySort.addSortByQuality(INVENTORY_CRAFT_BAG)
+    QualitySort.addSortByQuality(INVENTORY_HOUSE_BANK)
     QualitySort.addSortByQuality(QUALITYSORT_INVENTORY_QUICKSLOT)
     QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_DECON)
     QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_ENCHANTING)

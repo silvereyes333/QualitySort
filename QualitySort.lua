@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.6.0.1"
+QualitySort.version = "1.6.1.0"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
@@ -232,7 +232,7 @@ function QualitySort.addSortByQuality(flag)
     qualityHeader:SetAnchor(RIGHT, nameHeader, LEFT, -35, 0)
     qualityHeader:SetDimensions(16, 32)
     ZO_SortHeader_InitializeArrowHeader(qualityHeader, QualitySort.orderByItemQuality, ZO_SORT_ORDER_UP)
-    ZO_SortHeader_SetTooltip(qualityHeader, GetString(SI_GAMEPAD_TRADING_HOUSE_BROWSE_QUALITY), BOTTOMRIGHT, 0, 32)
+    ZO_SortHeader_SetTooltip(qualityHeader, GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY), BOTTOMRIGHT, 0, 32)
 
     if flag >= QUALITYSORT_INVENTORY_QUICKSLOT then
         local inventory = sortByControl:GetParent()

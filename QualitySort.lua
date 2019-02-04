@@ -2,7 +2,7 @@
 QualitySort = {}
 
 QualitySort.name = "QualitySort"
-QualitySort.version = "1.6.0.1"
+QualitySort.version = "1.6.1.0"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
@@ -280,7 +280,7 @@ function QualitySort.addSortByQuality(flag)
         ShiftRightAnchorOffsetX(child, nameHeader, shiftX, qualityHeader)
     end
     
-    ZO_SortHeader_Initialize(qualityHeader, GetString(SI_GAMEPAD_TRADING_HOUSE_BROWSE_QUALITY), QualitySort.orderByItemQuality,
+    ZO_SortHeader_Initialize(qualityHeader, GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY), QualitySort.orderByItemQuality,
                              ZO_SORT_ORDER_UP, TEXT_ALIGN_RIGHT, "ZoFontHeader")
 
     if flag >= QUALITYSORT_INVENTORY_QUICKSLOT then

@@ -1,41 +1,66 @@
 -- A very special thanks to merlight for the research done to make this possible!
-QualitySort = {}
-
-QualitySort.name = "QualitySort"
-QualitySort.version = "1.6.1.0"
 
 QUALITYSORT_INVENTORY_QUICKSLOT  = 100
 QUALITYSORT_CRAFTING_DECON       = 200
 QUALITYSORT_CRAFTING_ENCHANTING  = 201
 QUALITYSORT_CRAFTING_IMPROVEMENT = 202
 QUALITYSORT_CRAFTING_REFINEMENT  = 203
+QUALITYSORT_CRAFTING_RETRAIT     = 204
 
-function QualitySort.getSortByHeader(flag)
-    if flag == INVENTORY_BACKPACK then
-        return ZO_PlayerInventorySortBy
-    elseif flag == INVENTORY_BANK then
-        return ZO_PlayerBankSortBy
-    elseif flag == INVENTORY_GUILD_BANK then
-        return ZO_GuildBankSortBy
-    elseif flag == INVENTORY_CRAFT_BAG then
-        return ZO_CraftBagSortBy
-    elseif flag == INVENTORY_HOUSE_BANK then
-        return ZO_HouseBankSortBy
-    elseif flag == QUALITYSORT_INVENTORY_QUICKSLOT then
-        return ZO_QuickSlotSortBy
-    elseif flag == QUALITYSORT_CRAFTING_DECON then
-        return ZO_SmithingTopLevelDeconstructionPanelInventorySortBy
-    elseif flag == QUALITYSORT_CRAFTING_ENCHANTING then
-        return ZO_EnchantingTopLevelInventorySortBy
-    elseif flag == QUALITYSORT_CRAFTING_IMPROVEMENT then
-        return ZO_SmithingTopLevelImprovementPanelInventorySortBy
-    elseif flag == QUALITYSORT_CRAFTING_REFINEMENT then
-        return ZO_SmithingTopLevelRefinementPanelInventorySortBy
-    end
-    return nil
-end
+QualitySort = {
+    name    = "QualitySort",
+    version = "2.0.0",
+    title   = "|c99CCEFQuality Sort|r",
+    author  = "|c99CCEFsilvereyes|r & |cEFEBBERandactyl|r",
+    sortOrders = {
+        ["enchantment"] = GetString(SI_ITEM_FORMAT_STR_AUGMENT_ITEM_TYPE),
+        ["equipped"]    = GetString(SI_ITEM_FORMAT_STR_EQUIPPED),
+        ["id"]          = GetString(SI_QUALITYSORT_ID),
+        ["level"]       = GetString(SI_QUALITYSORT_LEVEL),
+        ["masterWrit"]  = GetString(SI_QUALITYSORT_MASTER_WRIT),
+        ["name"]        = GetString(SI_TRADINGHOUSEFEATURECATEGORY0),
+        ["set"]         = GetString(SI_QUALITYSORT_SET),
+        ["slot"]        = GetString(SI_QUALITYSORT_EQUIP_SLOT),
+        ["style"]       = GetString(SI_SMITHING_HEADER_STYLE),
+        ["trait"]       = GetString(SI_SMITHING_HEADER_TRAIT),
+        ["vouchers"]    = GetString(SI_QUALITYSORT_VOUCHERS),
+    },
+    defaults = {
+        automatic = true,
+        sortOrder = {
+            "equipped",
+            "set",
+            "slot",
+            "name",
+            "level",
+            "trait",
+            "enchantment",
+            "style",
+            "id",
+            "vouchers",
+            "masterWrit",
+        }
+    },
+    sortByControls = {
+        [ZO_PlayerInventorySortBy]                                      = INVENTORY_BACKPACK,
+        [ZO_PlayerBankSortBy]                                           = INVENTORY_BANK,
+        [ZO_GuildBankSortBy]                                            = INVENTORY_GUILD_BANK,
+        [ZO_CraftBagSortBy]                                             = INVENTORY_CRAFT_BAG,
+        [ZO_HouseBankSortBy]                                            = INVENTORY_HOUSE_BANK,
+        [ZO_QuickSlotSortBy]                                            = QUALITYSORT_INVENTORY_QUICKSLOT,
+        [ZO_SmithingTopLevelDeconstructionPanelInventorySortBy]         = QUALITYSORT_CRAFTING_DECON,
+        [ZO_EnchantingTopLevelInventorySortBy]                          = QUALITYSORT_CRAFTING_ENCHANTING,
+        [ZO_SmithingTopLevelImprovementPanelInventorySortBy]            = QUALITYSORT_CRAFTING_IMPROVEMENT,
+        [ZO_SmithingTopLevelRefinementPanelInventorySortBy]             = QUALITYSORT_CRAFTING_REFINEMENT,
+        [ZO_RetraitStation_KeyboardTopLevelRetraitPanelInventorySortBy] = QUALITYSORT_CRAFTING_RETRAIT,
+    },
+}
+
+local addon = QualitySort
+
 QualitySort.extendedDataCache = {}
 local extendedDataCache = QualitySort.extendedDataCache
+local comparisonFunctions = { }
 local function GetExtendedData(data)
     local uniqueId = zo_getSafeId64Key(data.uniqueId or GetItemUniqueId(data.bagId, data.slotIndex))
     if extendedDataCache[uniqueId] then
@@ -55,6 +80,10 @@ local function GetExtendedData(data)
     extendedData.championRank = GetItemLinkRequiredChampionPoints(link)
     extendedData.traitInfo = GetItemLinkTraitInfo(link)
     extendedData.itemStyle = GetItemLinkItemStyle(link)
+    extendedData.equipType = GetItemLinkEquipType(link)
+    local _, setName, _, _, _, setId = GetItemLinkSetInfo(link)
+    extendedData.setId = setId
+    extendedData.setName = setName
     if charges and tonumber(charges) > 0 then
         extendedData.enchantment = {
             charges = tonumber(charges),
@@ -88,7 +117,12 @@ local function NilOrLessThan(value1, value2)
         return value1 < value2
     end
 end
-local function CompareEnchantments(enchant1, enchant2)
+function comparisonFunctions.enchantment(item1, extData1, item2, extData2)
+    if extData1.enchantment == extData2.enchantment then
+        return
+    end
+    local enchant1 = extData1.enchantment
+    local enchant2 = extData2.enchantment
     if enchant1 == nil then
         return true
     elseif enchant2 == nil then
@@ -101,10 +135,35 @@ local function CompareEnchantments(enchant1, enchant2)
         return NilOrLessThan(enchant1.charges, enchant2.charges)
     end
 end
-local function CompareMasterWrits(writ1, writ2)
-    if writ1.vouchers ~= writ2.vouchers then
-        return NilOrLessThan(writ1.vouchers, writ2.vouchers)
-    elseif writ1.writ1 ~= writ2.writ1 then
+function comparisonFunctions.equipped(item1, extData1, item2, extData2)
+    if item1.bagId ~= item2.bagId then
+        if item1.bagId == BAG_WORN then
+            return true
+        elseif item2.bagId == BAG_WORN then
+            return false
+        end
+    end
+end
+function comparisonFunctions.id(item1, extData1, item2, extData2)
+    if extData1.itemId ~= extData2.itemId then
+        return NilOrLessThan(extData1.itemId, extData2.itemId)
+    end
+end
+function comparisonFunctions.level(item1, extData1, item2, extData2)
+    if item1.requiredLevel ~= item1.requiredLevel then
+        return NilOrLessThan(item1.requiredLevel, item1.requiredLevel)
+    end
+    if extData1.championRank ~= extData2.championRank then
+        return NilOrLessThan(extData1.championRank, extData2.championRank)
+    end
+end
+function comparisonFunctions.masterWrit(item1, extData1, item2, extData2)
+    if extData1.masterWrit == nil or extData2.masterWrit == nil then
+        return
+    end
+    local writ1 = extData1.masterWrit
+    local writ2 = extData2.masterWrit
+    if writ1.writ1 ~= writ2.writ1 then
         return NilOrLessThan(writ1.writ1, writ2.writ1)
     elseif writ1.writ2 ~= writ2.writ2 then
         return NilOrLessThan(writ1.writ2, writ2.writ2)
@@ -118,59 +177,63 @@ local function CompareMasterWrits(writ1, writ2)
         return NilOrLessThan(writ1.writ6, writ2.writ6)
     end
 end
-function QualitySort.orderByItemQuality(data1, data2)
+function comparisonFunctions.name(item1, extData1, item2, extData2)
+    if item1.name ~= item2.name then
+        return NilOrLessThan(item1.name, item2.name)
+    end
+end
+function comparisonFunctions.set(item1, extData1, item2, extData2)
+    if extData1.setId ~= extData2.setId then
+        return NilOrLessThan(extData1.setName, extData2.setName)
+    end
+end
+function comparisonFunctions.slot(item1, extData1, item2, extData2)
+    if extData1.equipType ~= extData2.equipType then
+        return NilOrLessThan(extData1.equipType, extData2.equipType)
+    end
+end
+function comparisonFunctions.style(item1, extData1, item2, extData2)
+    if extData1.itemStyle ~= extData2.itemStyle then
+        return NilOrLessThan(extData1.itemStyle, extData2.itemStyle)
+    end
+end
+function comparisonFunctions.trait(item1, extData1, item2, extData2)
+    if extData1.traitInfo ~= extData2.traitInfo then
+        return NilOrLessThan(extData1.traitInfo, extData2.traitInfo)
+    end
+end
+function comparisonFunctions.vouchers(item1, extData1, item2, extData2)
+    if extData1.masterWrit ~= nil and extData2.masterWrit ~= nil then
+        return NilOrLessThan(extData1.masterWrit.vouchers, extData2.masterWrit.vouchers)
+    end
+end
+
+function QualitySort.orderByItemQuality(item1, item2)
+  
+    local self = QualitySort
     
     -- Sort first by quality
-    if data2.quality ~= data1.quality then
-        return NilOrLessThan(data2.quality, data1.quality)
-    end
-    
-    -- Then by name
-    if data1.name ~= data2.name then
-        return NilOrLessThan(data1.name, data2.name)
-    end
-    
-    -- Then by level
-    if data1.requiredLevel ~= data2.requiredLevel then
-        return NilOrLessThan(data1.requiredLevel, data2.requiredLevel)
+    if item1.quality ~= item2.quality then
+        return NilOrLessThan(item2.quality, item1.quality)
     end
     
     -- Get extended data for the two data slots
-    local exData1 = GetExtendedData(data1)
-    local exData2 = GetExtendedData(data2)
+    local extData1 = GetExtendedData(item1)
+    local extData2 = GetExtendedData(item2)
     
-    -- Then by champion rank
-    if exData1.championRank ~= exData2.championRank then
-        return NilOrLessThan(exData1.championRank, exData2.championRank)
+    -- Perform comparisons in the configured sort order
+    for optionIndex, option in ipairs(self.settings.sortOrder) do
+        local compare = comparisonFunctions[option]
+        if compare then
+            local result = compare(item1, extData1, item2, extData2)
+            if result ~= nil then
+                return result
+            end
+        end
     end
     
-    -- Then by trait
-    if exData1.traitInfo ~= exData2.traitInfo then
-        return NilOrLessThan(exData1.traitInfo, exData2.traitInfo)
-    end
-    
-    -- Then by enchant
-    if exData1.enchantment ~= exData2.enchantment then
-        return CompareEnchantments(exData1.enchantment, exData2.enchantment)
-    end
-
-    -- Then by style
-    if exData1.itemStyle ~= exData2.itemStyle then
-        return NilOrLessThan(exData1.itemStyle, exData2.itemStyle)
-    end
-
-    -- Then by item id
-    if exData1.itemId ~= exData2.itemId then
-        return NilOrLessThan(exData1.itemId, exData2.itemId)
-    end
-
-    -- Then by master writ
-    if exData1.masterWrit ~= nil and exData2.masterWrit ~= nil then
-        return CompareMasterWrits(exData1.masterWrit, exData2.masterWrit)
-    end
-
     -- And finally, sort by item unique id, to make sure relative order stays the same on update
-    return NilOrLessThan(exData1.uniqueId, exData2.uniqueId)
+    return NilOrLessThan(extData1.uniqueId, extData2.uniqueId)
 end
 local function sortFunction(entry1, entry2, sortKey, sortOrder)
     local res
@@ -236,6 +299,17 @@ local function GetBagIdForInventoryType(inventoryType)
         end
     end
 end
+local function GetSortHeaders(sortByControl)
+    local self = QualitySort
+    local flag = self.sortByControls[sortByControl]
+    local inventory = PLAYER_INVENTORY.inventories[flag]
+    if inventory then
+        return inventory.sortHeaders
+    end
+    inventory = sortByControl:GetParent()
+    local owner = inventory.owner
+    return owner.sortHeaders
+end
 local function PurgeCacheForInventoryType(inventoryManager, inventoryType)
     if inventoryType == INVENTORY_QUEST_ITEM then return end
     local bagId = GetBagIdForInventoryType(inventoryType)
@@ -252,10 +326,23 @@ local function PurgeCacheForInventoryType(inventoryManager, inventoryType)
         extendedDataCache[itemsToPurge[i]] = nil
     end
 end
-function QualitySort.addSortByQuality(flag)
+local function OnSortByControlEffectivelyShown(sortByControl)
+    local self = QualitySort
+    
+    if self.settings.automatic then
+        zo_callLater(function()
+                         local sortHeaders = GetSortHeaders(sortByControl)
+                         local qualityHeader = GetControl(sortByControl, "Quality")
+                         sortHeaders:OnHeaderClicked(qualityHeader, false, false, ZO_SORT_ORDER_UP)
+                     end, 20)
+    end
+end
+function QualitySort.addSortByQuality(flag, sortByControl)
+  
+    local self = QualitySort
+  
     local newNameWidth = 80
     local qualityWidth = 80
-    local sortByControl = QualitySort.getSortByHeader(flag)
     local nameHeader = sortByControl:GetNamedChild("Name")
     local nameWidth = nameHeader:GetWidth()
     local shiftX = nameWidth - newNameWidth
@@ -280,20 +367,18 @@ function QualitySort.addSortByQuality(flag)
         ShiftRightAnchorOffsetX(child, nameHeader, shiftX, qualityHeader)
     end
     
-    ZO_SortHeader_Initialize(qualityHeader, GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY), QualitySort.orderByItemQuality,
+    ZO_SortHeader_Initialize(qualityHeader, GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY), self.orderByItemQuality,
                              ZO_SORT_ORDER_UP, TEXT_ALIGN_RIGHT, "ZoFontHeader")
 
-    if flag >= QUALITYSORT_INVENTORY_QUICKSLOT then
-        local inventory = sortByControl:GetParent()
-        local owner = inventory.owner
-        QualitySort.initSortFunction(owner)
-        owner.sortHeaders:AddHeader(qualityHeader)
+    local inventory = PLAYER_INVENTORY.inventories[flag]
+    if inventory then
+        self.initCustomInventorySortFn(inventory)
     else
-    
-        local inventory = PLAYER_INVENTORY.inventories[flag]
-        QualitySort.initCustomInventorySortFn(inventory)
-        inventory.sortHeaders:AddHeader(qualityHeader)
+        self.initSortFunction(sortByControl:GetParent().owner)
     end
+    GetSortHeaders(sortByControl):AddHeader(qualityHeader)
+    
+    ZO_PreHookHandler(sortByControl, "OnEffectivelyShown", OnSortByControlEffectivelyShown)
 end
 
 
@@ -302,23 +387,21 @@ function QualitySort.printVersion()
 end
 
 function QualitySort.onAddonLoaded(eventCode, addonName)
-    if addonName ~= QualitySort.name then return end
+    local self = QualitySort
+    if addonName ~= self.name then return end
 
-    EVENT_MANAGER:UnregisterForEvent("QualitySort", EVENT_ADD_ON_LOADED, QualitySort.onAddonLoaded)
+    EVENT_MANAGER:UnregisterForEvent("QualitySort", EVENT_ADD_ON_LOADED, self.onAddonLoaded)
+    
+    self:SetupOptions()
 
     ZO_QuickSlot.owner = QUICKSLOT_WINDOW
-    QualitySort.addSortByQuality(INVENTORY_BACKPACK)
-    QualitySort.addSortByQuality(INVENTORY_BANK)
-    QualitySort.addSortByQuality(INVENTORY_GUILD_BANK)
-    QualitySort.addSortByQuality(INVENTORY_CRAFT_BAG)
-    QualitySort.addSortByQuality(INVENTORY_HOUSE_BANK)
-    QualitySort.addSortByQuality(QUALITYSORT_INVENTORY_QUICKSLOT)
-    QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_DECON)
-    QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_ENCHANTING)
-    QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_IMPROVEMENT)
-    QualitySort.addSortByQuality(QUALITYSORT_CRAFTING_REFINEMENT)
+    
+    for sortByControl, flag in pairs(self.sortByControls) do
+        self.addSortByQuality(flag, sortByControl)
+    end
+    
     ZO_PreHook(PLAYER_INVENTORY, "ApplySort", PurgeCacheForInventoryType)
-    SLASH_COMMANDS["/qualitysort"] = QualitySort.printVersion
+    SLASH_COMMANDS["/qualitysort"] = self.printVersion
 end
 
 EVENT_MANAGER:RegisterForEvent("QualitySort", EVENT_ADD_ON_LOADED, QualitySort.onAddonLoaded)

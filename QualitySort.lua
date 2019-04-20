@@ -9,7 +9,7 @@ QUALITYSORT_CRAFTING_RETRAIT     = 204
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.0.0",
+    version = "2.0.1",
     title   = "|c99CCEFQuality Sort|r",
     author  = "|c99CCEFsilvereyes|r & |cEFEBBERandactyl|r",
     sortOrders = {

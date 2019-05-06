@@ -9,7 +9,7 @@ QUALITYSORT_CRAFTING_RETRAIT     = 204
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.0.1",
+    version = "2.0.2",
     title   = "|c99CCEFQuality Sort|r",
     author  = "|c99CCEFsilvereyes|r & |cEFEBBERandactyl|r",
     sortOrders = {
@@ -42,7 +42,7 @@ QualitySort = {
         }
     },
     sortByControls = {
-        [ZO_PlayerInventorySortBy]                                      = INVENTORY_BACKPACK,
+        [ZO_PlayerInventorySortBy]                                      = { INVENTORY_BACKPACK, INVENTORY_QUEST_ITEM },
         [ZO_PlayerBankSortBy]                                           = INVENTORY_BANK,
         [ZO_GuildBankSortBy]                                            = INVENTORY_GUILD_BANK,
         [ZO_CraftBagSortBy]                                             = INVENTORY_CRAFT_BAG,
@@ -217,6 +217,10 @@ function QualitySort.orderByItemQuality(item1, item2)
         return NilOrLessThan(item2.quality, item1.quality)
     end
     
+    if item1.questIndex or item2.questIndex then
+        return NilOrLessThan(item1.name, item2.name)
+    end
+    
     -- Get extended data for the two data slots
     local extData1 = GetExtendedData(item1)
     local extData2 = GetExtendedData(item2)
@@ -273,6 +277,9 @@ end
 local function GetSortHeaders(sortByControl)
     local self = QualitySort
     local flag = self.sortByControls[sortByControl]
+    if type(flag) == "table" then
+        flag = flag[1]
+    end
     local inventory = PLAYER_INVENTORY.inventories[flag]
     if inventory then
         return inventory.sortHeaders
@@ -299,7 +306,6 @@ local function PurgeCacheForInventoryType(inventoryManager, inventoryType)
 end
 local function OnSortByControlEffectivelyShown(sortByControl)
     local self = QualitySort
-    
     if self.settings.automatic then
         zo_callLater(function()
                          local sortHeaders = GetSortHeaders(sortByControl)
@@ -308,7 +314,7 @@ local function OnSortByControlEffectivelyShown(sortByControl)
                      end, 20)
     end
 end
-function QualitySort.addSortByQuality(flag, sortByControl)
+function QualitySort.addSortByQuality(flags, sortByControl)
   
     local self = QualitySort
   
@@ -320,11 +326,16 @@ function QualitySort.addSortByQuality(flag, sortByControl)
     ZO_SortHeader_InitializeArrowHeader(qualityHeader, self.orderByItemQuality, ZO_SORT_ORDER_UP)
     ZO_SortHeader_SetTooltip(qualityHeader, GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY), BOTTOMRIGHT, 0, 32)
 
-    local inventory = PLAYER_INVENTORY.inventories[flag]
-    if inventory then
-        self.initCustomInventorySortFn(inventory)
-    else
-        self.initSortFunction(sortByControl:GetParent().owner)
+    if type(flags) ~= "table" then
+        flags = { flags }
+    end
+    for _, flag in ipairs(flags) do
+        local inventory = PLAYER_INVENTORY.inventories[flag]
+        if inventory then
+            self.initCustomInventorySortFn(inventory)
+        else
+            self.initSortFunction(sortByControl:GetParent().owner)
+        end
     end
     GetSortHeaders(sortByControl):AddHeader(qualityHeader)
     
@@ -346,8 +357,8 @@ function QualitySort.onAddonLoaded(eventCode, addonName)
 
     ZO_QuickSlot.owner = QUICKSLOT_WINDOW
     
-    for sortByControl, flag in pairs(self.sortByControls) do
-        self.addSortByQuality(flag, sortByControl)
+    for sortByControl, flags in pairs(self.sortByControls) do
+        self.addSortByQuality(flags, sortByControl)
     end
     
     ZO_PreHook(PLAYER_INVENTORY, "ApplySort", PurgeCacheForInventoryType)

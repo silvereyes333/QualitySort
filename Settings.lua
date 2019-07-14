@@ -1,6 +1,5 @@
 local addon = QualitySort
 ----------------- Settings -----------------------
-local LibSavedVars = LibStub("LibSavedVars")
 local COLOR_DISABLED = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_DISABLED))
 local NONE = COLOR_DISABLED:Colorize(zo_strformat(GetString(SI_QUEST_TYPE_FORMAT), GetString(SI_ITEMTYPE0)))
 local INDENT = "|t420%:100%:esoui/art/worldmap/worldmap_map_background.dds|t"

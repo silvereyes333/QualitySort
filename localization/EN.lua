@@ -7,4 +7,6 @@ QUALITYSORT_STRINGS = {
     ["SI_QUALITYSORT_ID"]          = "Unique Item Identifier",
     ["SI_QUALITYSORT_VOUCHERS"]    = "Writ Voucher Count",
     ["SI_QUALITYSORT_MASTER_WRIT"] = "Master Writ Requirements",
+    ["SI_QUALITYSORT_ASCENDING"]   = "Ascending",
+    ["SI_QUALITYSORT_DESCENDING"]  = "Descending",
 }

@@ -1,4 +1,6 @@
 local addon = QualitySort
+local dataVersion2Upgrade
+
 ----------------- Settings -----------------------
 local COLOR_DISABLED = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_DISABLED))
 local NONE = COLOR_DISABLED:Colorize(zo_strformat(GetString(SI_QUEST_TYPE_FORMAT), GetString(SI_ITEMTYPE0)))
@@ -15,7 +17,7 @@ local function SwapDropdownValues(settings, optionIndex, value)
         if swapValue == value then
             settings[swapOptionIndex] = oldValue
             settings[optionIndex] = value
-            return
+            return swapOptionIndex
         end
     end
     settings[optionIndex] = value
@@ -27,12 +29,30 @@ local function CreateSortOrderOption(optionsTable, optionIndex)
         width = "half",
         choices = self.sortOrderOptions,
         choicesValues = self.sortOrderValues,
-        name = INDENT .. tostring(optionIndex + 1),
+        name = INDENT .. tostring(optionIndex),
         getFunc = function() return self.settings.sortOrder[optionIndex] end,
         setFunc = function(value)
-            SwapDropdownValues(self.settings.sortOrder, optionIndex, value)
+            local swapOptionIndex = SwapDropdownValues(self.settings.sortOrder, optionIndex, value)
+            if swapOptionIndex then
+                local tmpSortDirection = self.settings.sortDirection[swapOptionIndex]
+                self.settings.sortDirection[swapOptionIndex] = self.settings.sortDirection[optionIndex]
+                self.settings.sortDirection[optionIndex] = tmpSortDirection
+            end
         end,
         default = self.defaults.sortOrder[optionIndex]
+    })
+end
+local function CreateSortDirectionOption(optionsTable, optionIndex)
+    local self = addon
+    table.insert(optionsTable, {
+        type = "dropdown",
+        width = "half",
+        choices = self.sortDirectionChoices,
+        choicesValues = self.sortDirectionChoicesValues,
+        getFunc = function() return self.settings.sortDirection[self.settings.sortOrder[optionIndex]] end,
+        setFunc = function(value) self.settings.sortDirection[self.settings.sortOrder[optionIndex]] = value end,
+        default = self.defaults.sortDirection[self.settings.sortOrder[optionIndex]],
+        disabled = function() return self.settings.sortOrder[optionIndex] == "" end,
     })
 end
 
@@ -41,6 +61,7 @@ function addon:SetupOptions()
     -- Setup saved vars
     self.settings = LibSavedVars:NewAccountWide(self.name .. "_Account", self.defaults)
                                 :AddCharacterSettingsToggle(self.name .. "_Character")
+                                :Version(2, dataVersion2Upgrade)
     
     -- Generate alphabetical list of sort order options in the current language
     local sortOrderValuesByOption = { [NONE] = "" }
@@ -56,8 +77,6 @@ function addon:SetupOptions()
     end
     
     --Setup options panel
-    local LAM2 = LibStub("LibAddonMenu-2.0")
-
     local panelData = {
         type = "panel",
         name = self.title,
@@ -67,8 +86,9 @@ function addon:SetupOptions()
         registerForRefresh = true,
         registerForDefaults = true,
     }
-    LAM2:RegisterAddonPanel(self.name .. "Options", panelData)
-
+    LibAddonMenu2:RegisterAddonPanel(self.name .. "Options", panelData)
+    self.sortDirectionChoices = {GetString(SI_QUALITYSORT_DESCENDING), GetString(SI_QUALITYSORT_ASCENDING)}
+    self.sortDirectionChoicesValues = {QUALITYSORT_DIR_DESC, QUALITYSORT_DIR_ASC}
     local optionsTable = { 
         
         -- Account-wide settings
@@ -90,23 +110,11 @@ function addon:SetupOptions()
             type  = "divider",
             width = "full",
         },
-        {
-            type  = "description",
-            width = "half",
-            title = INDENT .. "1",
-            text  = INDENT .. GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY)
-        },
     }
     local optionCount = #self.sortOrderOptions - 1
-    local minColumn2Index = math.floor( optionCount / 2 ) + 1
-    
-    CreateSortOrderOption(sortOrderControls, minColumn2Index)
-    for optionIndex = 1, minColumn2Index - 1 do
+    for optionIndex = 1, optionCount do
         CreateSortOrderOption(sortOrderControls, optionIndex)
-        local optionIndex2 = optionIndex + minColumn2Index
-        if optionIndex2 <= optionCount then
-            CreateSortOrderOption(sortOrderControls, optionIndex2)
-        end
+        CreateSortDirectionOption(sortOrderControls, optionIndex)
     end
     table.insert(optionsTable,
         -- Submenu
@@ -116,5 +124,14 @@ function addon:SetupOptions()
             controls = sortOrderControls,
         })
 
-    LAM2:RegisterOptionControls(self.name .. "Options", optionsTable)
+    LibAddonMenu2:RegisterOptionControls(self.name .. "Options", optionsTable)
+end
+
+
+-- Local functions
+
+function dataVersion2Upgrade(settings)
+    if settings.sortOrder then
+        table.insert(settings.sortOrder, 1, "quality")
+    end
 end

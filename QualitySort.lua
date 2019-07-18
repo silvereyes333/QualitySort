@@ -7,9 +7,12 @@ QUALITYSORT_CRAFTING_IMPROVEMENT = 202
 QUALITYSORT_CRAFTING_REFINEMENT  = 203
 QUALITYSORT_CRAFTING_RETRAIT     = 204
 
+QUALITYSORT_DIR_DESC = 1
+QUALITYSORT_DIR_ASC  = 2
+
 QualitySort = {
     name    = "QualitySort",
-    version = "2.0.3",
+    version = "2.1.0",
     title   = "|c99CCEFQuality Sort|r",
     author  = "|c99CCEFsilvereyes|r & |cEFEBBERandactyl|r",
     sortOrders = {
@@ -19,6 +22,7 @@ QualitySort = {
         ["level"]       = GetString(SI_QUALITYSORT_LEVEL),
         ["masterWrit"]  = GetString(SI_QUALITYSORT_MASTER_WRIT),
         ["name"]        = GetString(SI_TRADINGHOUSEFEATURECATEGORY0),
+        ["quality"]     = GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY),
         ["set"]         = GetString(SI_QUALITYSORT_SET),
         ["slot"]        = GetString(SI_QUALITYSORT_EQUIP_SLOT),
         ["style"]       = GetString(SI_SMITHING_HEADER_STYLE),
@@ -28,6 +32,7 @@ QualitySort = {
     defaults = {
         automatic = true,
         sortOrder = {
+            "quality",
             "equipped",
             "set",
             "slot",
@@ -39,7 +44,21 @@ QualitySort = {
             "id",
             "vouchers",
             "masterWrit",
-        }
+        },
+        sortDirection = {
+            ["enchantment"] = QUALITYSORT_DIR_ASC,
+            ["equipped"]    = QUALITYSORT_DIR_ASC,
+            ["id"]          = QUALITYSORT_DIR_ASC,
+            ["level"]       = QUALITYSORT_DIR_ASC,
+            ["masterWrit"]  = QUALITYSORT_DIR_ASC,
+            ["name"]        = QUALITYSORT_DIR_ASC,
+            ["quality"]     = QUALITYSORT_DIR_DESC,
+            ["set"]         = QUALITYSORT_DIR_ASC,
+            ["slot"]        = QUALITYSORT_DIR_ASC,
+            ["style"]       = QUALITYSORT_DIR_ASC,
+            ["trait"]       = QUALITYSORT_DIR_ASC,
+            ["vouchers"]    = QUALITYSORT_DIR_ASC,
+        },
     },
     sortByControls = {
         [ZO_PlayerInventorySortBy]                                      = { INVENTORY_BACKPACK, INVENTORY_QUEST_ITEM },
@@ -150,8 +169,8 @@ function comparisonFunctions.id(item1, extData1, item2, extData2)
     end
 end
 function comparisonFunctions.level(item1, extData1, item2, extData2)
-    if item1.requiredLevel ~= item1.requiredLevel then
-        return NilOrLessThan(item1.requiredLevel, item1.requiredLevel)
+    if item1.requiredLevel ~= item2.requiredLevel then
+        return NilOrLessThan(item1.requiredLevel, item2.requiredLevel)
     end
     if extData1.championRank ~= extData2.championRank then
         return NilOrLessThan(extData1.championRank, extData2.championRank)
@@ -214,7 +233,11 @@ function QualitySort.orderByItemQuality(item1, item2)
     
     -- Sort first by quality
     if item1.quality ~= item2.quality then
-        return NilOrLessThan(item2.quality, item1.quality)
+        if self.settings.sortDirection.quality == QUALITYSORT_DIR_ASC then
+            return NilOrLessThan(item1.quality, item2.quality)
+        else
+            return NilOrLessThan(item2.quality, item1.quality)
+        end
     end
     
     if item1.questIndex or item2.questIndex then
@@ -229,7 +252,12 @@ function QualitySort.orderByItemQuality(item1, item2)
     for optionIndex, option in ipairs(self.settings.sortOrder) do
         local compare = comparisonFunctions[option]
         if compare then
-            local result = compare(item1, extData1, item2, extData2)
+            local result
+            if self.settings.sortDirection[self.settings.sortOrder[optionIndex]] == QUALITYSORT_DIR_ASC then
+                result = compare(item1, extData1, item2, extData2)
+            else
+                result = compare(item2, extData2, item1, extData1)
+            end
             if result ~= nil then
                 return result
             end
@@ -335,11 +363,11 @@ local function PurgeCacheForInventoryType(inventoryManager, inventoryType)
 end
 local function OnSortByControlEffectivelyShown(sortByControl)
     local self = QualitySort
+    local qualityHeader = GetControl(sortByControl, "Quality")
     if self.settings.automatic then
         zo_callLater(function()
                          local sortHeaders = GetSortHeaders(sortByControl)
-                         local qualityHeader = GetControl(sortByControl, "Quality")
-                         sortHeaders:OnHeaderClicked(qualityHeader, false, false, ZO_SORT_ORDER_UP)
+                         sortHeaders:OnHeaderClicked(qualityHeader, false, false, qualityHeader.initialDirection)
                      end, 20)
     end
 end

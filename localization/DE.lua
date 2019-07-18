@@ -7,6 +7,8 @@ local strings = {
     ["SI_QUALITYSORT_ID"]          = "Identifikationsnummer",
     ["SI_QUALITYSORT_VOUCHERS"]    = "Anzahl Schriebscheine",
     ["SI_QUALITYSORT_MASTER_WRIT"] = "Meisterschriebanforderungen",
+    ["SI_QUALITYSORT_ASCENDING"]   = "aufsteigend",
+    ["SI_QUALITYSORT_DESCENDING"]  = "absteigend",
 }
 
 -- Overwrite English strings

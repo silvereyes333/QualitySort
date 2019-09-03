@@ -12,7 +12,7 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.1.0",
+    version = "2.1.1",
     title   = "|c99CCEFQuality Sort|r",
     author  = "|c99CCEFsilvereyes|r & |cEFEBBERandactyl|r",
     sortOrders = {
@@ -201,6 +201,16 @@ function comparisonFunctions.name(item1, extData1, item2, extData2)
         return NilOrLessThan(item1.name, item2.name)
     end
 end
+function comparisonFunctions.quality(item1, extData1, item2, extData2)
+    local self = QualitySort
+    if item1.quality ~= item2.quality then
+        if self.settings.sortDirection.quality == QUALITYSORT_DIR_ASC then
+            return NilOrLessThan(item1.quality, item2.quality)
+        else
+            return NilOrLessThan(item2.quality, item1.quality)
+        end
+    end
+end
 function comparisonFunctions.set(item1, extData1, item2, extData2)
     if extData1.setId ~= extData2.setId then
         return NilOrLessThan(extData1.setName, extData2.setName)
@@ -230,15 +240,6 @@ end
 function QualitySort.orderByItemQuality(item1, item2)
   
     local self = QualitySort
-    
-    -- Sort first by quality
-    if item1.quality ~= item2.quality then
-        if self.settings.sortDirection.quality == QUALITYSORT_DIR_ASC then
-            return NilOrLessThan(item1.quality, item2.quality)
-        else
-            return NilOrLessThan(item2.quality, item1.quality)
-        end
-    end
     
     if item1.questIndex or item2.questIndex then
         return NilOrLessThan(item1.name, item2.name)

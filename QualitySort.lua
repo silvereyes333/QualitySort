@@ -12,7 +12,7 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.1.1",
+    version = "2.1.2",
     title   = "|c99CCEFQuality Sort|r",
     author  = "|c99CCEFsilvereyes|r & |cEFEBBERandactyl|r",
     sortOrders = {
@@ -202,13 +202,8 @@ function comparisonFunctions.name(item1, extData1, item2, extData2)
     end
 end
 function comparisonFunctions.quality(item1, extData1, item2, extData2)
-    local self = QualitySort
     if item1.quality ~= item2.quality then
-        if self.settings.sortDirection.quality == QUALITYSORT_DIR_ASC then
-            return NilOrLessThan(item1.quality, item2.quality)
-        else
-            return NilOrLessThan(item2.quality, item1.quality)
-        end
+        return NilOrLessThan(item1.quality, item2.quality)
     end
 end
 function comparisonFunctions.set(item1, extData1, item2, extData2)

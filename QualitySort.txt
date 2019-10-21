@@ -1,8 +1,8 @@
 ## Title: Quality Sort
 ## Author: |c99CCEFsilvereyes|r & |cEFEBBERandactyl|r
-## Version: 2.1.2
-## AddOnVersion: 20102
-## APIVersion: 100028
+## Version: 2.1.3
+## AddOnVersion: 20103
+## APIVersion: 100029 100030
 ## DependsOn: LibSavedVars>=50000 LibAddonMenu-2.0
 ## OptionalDependsOn: wykkydsEquipmentLevel CraftingMaterialLevelDisplay
 ## SavedVariables: QualitySort_Account

@@ -12,7 +12,7 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.1.3",
+    version = "2.1.4",
     title   = "|c99CCEFQuality Sort|r",
     author  = "|c99CCEFsilvereyes|r & |cEFEBBERandactyl|r",
     sortOrders = {
@@ -93,7 +93,7 @@ local function GetExtendedData(data)
     local link = GetItemLink(extendedData.bagId, extendedData.slotIndex)
     local _, _, _, itemId, _, _, 
           enchantType, enchantSubType, enchantLevel, writ1, writ2, writ3, writ4, writ5, writ6, 
-          itemStyle, _, _, _, charges, vouchers = ZO_LinkHandler_ParseLink(link)
+          itemStyle, _, _, _, charges, _, _, _, vouchers = ZO_LinkHandler_ParseLink(link)
     extendedData.itemId = tonumber(itemId)
     extendedData.link = link
     extendedData.championRank = GetItemLinkRequiredChampionPoints(link)

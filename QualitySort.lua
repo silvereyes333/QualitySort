@@ -12,9 +12,9 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.1.4",
-    title   = "|c99CCEFQuality Sort|r",
-    author  = "|c99CCEFsilvereyes|r & |cEFEBBERandactyl|r",
+    version = "2.1.5",
+    title   = "Quality Sort",
+    author  = "silvereyes & Randactyl",
     sortOrders = {
         ["enchantment"] = GetString(SI_ITEM_FORMAT_STR_AUGMENT_ITEM_TYPE),
         ["equipped"]    = GetString(SI_ITEM_FORMAT_STR_EQUIPPED),

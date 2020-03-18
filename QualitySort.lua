@@ -12,7 +12,7 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.1.5",
+    version = "2.1.6",
     title   = "Quality Sort",
     author  = "silvereyes & Randactyl",
     sortOrders = {
@@ -73,9 +73,17 @@ QualitySort = {
         [ZO_SmithingTopLevelRefinementPanelInventorySortBy]             = QUALITYSORT_CRAFTING_REFINEMENT,
         [ZO_RetraitStation_KeyboardTopLevelRetraitPanelInventorySortBy] = QUALITYSORT_CRAFTING_RETRAIT,
     },
+    debugMode = false
 }
 
 local addon = QualitySort
+
+function addon:Debug(text)
+    if not self.debugMode then
+        return
+    end
+    d("QualitySort " .. text)
+end
 
 QualitySort.extendedDataCache = {}
 local extendedDataCache = QualitySort.extendedDataCache
@@ -227,7 +235,10 @@ function comparisonFunctions.trait(item1, extData1, item2, extData2)
     end
 end
 function comparisonFunctions.vouchers(item1, extData1, item2, extData2)
-    if extData1.masterWrit ~= nil and extData2.masterWrit ~= nil then
+    if extData1.masterWrit == nil or extData2.masterWrit == nil then
+        return
+    end
+    if extData1.masterWrit.vouchers ~= extData2.masterWrit.vouchers then
         return NilOrLessThan(extData1.masterWrit.vouchers, extData2.masterWrit.vouchers)
     end
 end
@@ -255,6 +266,7 @@ function QualitySort.orderByItemQuality(item1, item2)
                 result = compare(item2, extData2, item1, extData1)
             end
             if result ~= nil then
+                self:Debug(option .. " compare " .. extData1.link .. " to " .. extData2.link .. ": " .. tostring(result))
                 return result
             end
         end

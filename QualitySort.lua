@@ -12,7 +12,7 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.1.6",
+    version = "2.2.0",
     title   = "Quality Sort",
     author  = "silvereyes & Randactyl",
     sortOrders = {

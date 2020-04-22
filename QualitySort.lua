@@ -12,7 +12,7 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.2.0",
+    version = "2.3.0",
     title   = "Quality Sort",
     author  = "silvereyes & Randactyl",
     sortOrders = {
@@ -211,7 +211,7 @@ function comparisonFunctions.name(item1, extData1, item2, extData2)
 end
 function comparisonFunctions.quality(item1, extData1, item2, extData2)
     if item1.quality ~= item2.quality then
-        return NilOrLessThan(item1.quality, item2.quality)
+        return NilOrLessThan(item1.functionalQuality or item1.quality, item2.functionalQuality or item2.quality)
     end
 end
 function comparisonFunctions.set(item1, extData1, item2, extData2)

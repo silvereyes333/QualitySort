@@ -63,6 +63,10 @@ function addon:SetupOptions()
                                 :AddCharacterSettingsToggle(self.name .. "_Character")
                                 :Version(2, dataVersion2Upgrade)
     
+    if LSV_Data.EnableDefaultsTrimming then
+        self.settings:EnableDefaultsTrimming()
+    end
+    
     -- Generate alphabetical list of sort order options in the current language
     local sortOrderValuesByOption = { [NONE] = "" }
     self.sortOrderOptions = { NONE }

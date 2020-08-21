@@ -12,7 +12,7 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.3.2",
+    version = "2.4.0",
     title   = "Quality Sort",
     author  = "silvereyes & Randactyl",
     sortOrders = {
@@ -23,6 +23,7 @@ QualitySort = {
         ["masterWrit"]  = GetString(SI_QUALITYSORT_MASTER_WRIT),
         ["name"]        = GetString(SI_TRADINGHOUSEFEATURECATEGORY0),
         ["quality"]     = GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY),
+        ["quantity"]    = GetString(SI_CRAFTING_QUANTITY_HEADER),
         ["set"]         = GetString(SI_QUALITYSORT_SET),
         ["slot"]        = GetString(SI_QUALITYSORT_EQUIP_SLOT),
         ["style"]       = GetString(SI_SMITHING_HEADER_STYLE),
@@ -44,6 +45,7 @@ QualitySort = {
             "id",
             "vouchers",
             "masterWrit",
+            "quantity",
         },
         sortDirection = {
             ["enchantment"] = QUALITYSORT_DIR_ASC,
@@ -53,6 +55,7 @@ QualitySort = {
             ["masterWrit"]  = QUALITYSORT_DIR_ASC,
             ["name"]        = QUALITYSORT_DIR_ASC,
             ["quality"]     = QUALITYSORT_DIR_DESC,
+            ["quantity"]    = QUALITYSORT_DIR_DESC,
             ["set"]         = QUALITYSORT_DIR_ASC,
             ["slot"]        = QUALITYSORT_DIR_ASC,
             ["style"]       = QUALITYSORT_DIR_ASC,
@@ -144,6 +147,15 @@ local function NilOrLessThan(value1, value2)
         return value1 < value2
     end
 end
+local function NilOrLessThanId64(value1, value2)
+    if value1 == nil then
+        return true
+    elseif value2 == nil then
+        return false
+    else
+        return CompareId64s(value1, value2) == IS_LESS_THAN
+    end
+end
 function comparisonFunctions.enchantment(item1, extData1, item2, extData2)
     if extData1.enchantment == extData2.enchantment then
         return
@@ -211,7 +223,12 @@ function comparisonFunctions.name(item1, extData1, item2, extData2)
 end
 function comparisonFunctions.quality(item1, extData1, item2, extData2)
     if item1.quality ~= item2.quality then
-        return NilOrLessThan(item1.functionalQuality or item1.quality, item2.functionalQuality or item2.quality)
+        return NilOrLessThan(item1.functionalQuality, item2.functionalQuality)
+    end
+end
+function comparisonFunctions.quantity(item1, extData1, item2, extData2)
+    if item1.stackCount ~= item2.stackCount then
+        return NilOrLessThan(item1.stackCount, item2.stackCount)
     end
 end
 function comparisonFunctions.set(item1, extData1, item2, extData2)
@@ -273,7 +290,7 @@ function QualitySort.orderByItemQuality(item1, item2)
     end
     
     -- And finally, sort by item unique id, to make sure relative order stays the same on update
-    return NilOrLessThan(extData1.uniqueId, extData2.uniqueId)
+    return NilOrLessThanId64(extData1.uniqueId, extData2.uniqueId)
 end
 local function sortFunction(entry1, entry2, sortKey, sortOrder)
     local res

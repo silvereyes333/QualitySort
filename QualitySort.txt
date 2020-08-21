@@ -1,6 +1,6 @@
 ## Title: Quality Sort
 ## Author: silvereyes & Randactyl
-## Version: 2.3.2
+## Version: 2.4.0
 ## APIVersion: 100031 100032
 ## DependsOn: LibSavedVars>=50000 LibAddonMenu-2.0
 ## OptionalDependsOn: wykkydsEquipmentLevel CraftingMaterialLevelDisplay

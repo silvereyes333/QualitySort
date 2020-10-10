@@ -12,7 +12,7 @@ QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.4.0",
+    version = "2.4.1",
     title   = "Quality Sort",
     author  = "silvereyes & Randactyl",
     sortOrders = {
@@ -260,17 +260,23 @@ function comparisonFunctions.vouchers(item1, extData1, item2, extData2)
     end
 end
 
-function QualitySort.orderByItemQuality(item1, item2)
+function QualitySort.orderByItemQuality(entry1, entry2, sortKey, sortKeys, sortOrder)
   
     local self = QualitySort
     
-    if item1.questIndex or item2.questIndex then
-        return NilOrLessThan(item1.name, item2.name)
+    if sortOrder ~= ZO_SORT_ORDER_UP then
+        local swp = entry1
+        entry1 = entry2
+        entry2 = swp
+    end
+    
+    if entry1.questIndex or entry2.questIndex then
+        return NilOrLessThan(entry1.name, entry2.name)
     end
     
     -- Get extended data for the two data slots
-    local extData1 = GetExtendedData(item1)
-    local extData2 = GetExtendedData(item2)
+    local extData1 = GetExtendedData(entry1)
+    local extData2 = GetExtendedData(entry2)
     
     -- Perform comparisons in the configured sort order
     for optionIndex, option in ipairs(self.settings.sortOrder) do
@@ -278,9 +284,9 @@ function QualitySort.orderByItemQuality(item1, item2)
         if compare then
             local result
             if self.settings.sortDirection[self.settings.sortOrder[optionIndex]] == QUALITYSORT_DIR_ASC then
-                result = compare(item1, extData1, item2, extData2)
+                result = compare(entry1, extData1, entry2, extData2)
             else
-                result = compare(item2, extData2, item1, extData1)
+                result = compare(entry2, extData2, entry1, extData1)
             end
             if result ~= nil then
                 self:Debug(option .. " compare " .. extData1.link .. " to " .. extData2.link .. ": " .. tostring(result))
@@ -292,36 +298,17 @@ function QualitySort.orderByItemQuality(item1, item2)
     -- And finally, sort by item unique id, to make sure relative order stays the same on update
     return NilOrLessThanId64(extData1.uniqueId, extData2.uniqueId)
 end
-local function sortFunction(entry1, entry2, sortKey, sortOrder)
-    local res
-    if type(sortKey) == "function" then
-        if sortOrder == ZO_SORT_ORDER_UP then
-            res = sortKey(entry1.data, entry2.data)
-        else
-            res = sortKey(entry2.data, entry1.data)
-        end
-    else
-        local sortKeys = ZO_Inventory_GetDefaultHeaderSortKeys()
-        res = ZO_TableOrderingFunction(entry1.data, entry2.data, sortKey, sortKeys, sortOrder)
-    end
-    return res
-end
-function QualitySort.initCustomInventorySortFn(inventory)
-    inventory.sortFn = function(entry1, entry2)
-        local sortKey = inventory.currentSortKey
-        local sortOrder = inventory.currentSortOrder
-        return sortFunction(entry1, entry2, sortKey, sortOrder)
-    end
-end
-function QualitySort.initSortFunction(owner)
-    owner.sortFunction = function(entry1, entry2)
-        local sortKey = owner.sortHeaders:GetCurrentSortKey()
-        local sortOrder = owner.sortHeaders:GetSortDirection()
-        return sortFunction(entry1, entry2, sortKey, sortOrder)
-    end
-end
 local function Prehook_NameHeader_SetWidth(nameHeader, width)
     return true
+end
+local function Prehook_TableOrderingFunction()
+    local originalTableOrderingFunction = ZO_TableOrderingFunction
+    ZO_TableOrderingFunction = function(entry1, entry2, sortKey, sortKeys, sortOrder)
+        if sortKeys and sortKeys[sortKey] and type(sortKeys[sortKey].tableOrderingFunction) == "function" then
+            return sortKeys[sortKey].tableOrderingFunction(entry1, entry2, sortKey, sortKeys, sortOrder)
+        end
+        return originalTableOrderingFunction(entry1, entry2, sortKey, sortKeys, sortOrder)
+    end
 end
 local function ShiftRightAnchorOffsetX(header, relativeTo, shiftX, qualityHeader)
     if header == relativeTo or header == qualityHeader then
@@ -426,20 +413,15 @@ function QualitySort.addSortByQuality(flags, sortByControl)
         ShiftRightAnchorOffsetX(child, nameHeader, shiftX, qualityHeader)
     end
     
-    ZO_SortHeader_Initialize(qualityHeader, GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY), self.orderByItemQuality,
+    local sortKeys = ZO_Inventory_GetDefaultHeaderSortKeys()
+    if not sortKeys.quality then
+        sortKeys.quality = {}
+    end
+    sortKeys.quality.tableOrderingFunction = QualitySort.orderByItemQuality
+    
+    ZO_SortHeader_Initialize(qualityHeader, GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY), "quality",
                              ZO_SORT_ORDER_UP, TEXT_ALIGN_RIGHT, "ZoFontHeader")
-
-    if type(flags) ~= "table" then
-        flags = { flags }
-    end
-    for _, flag in ipairs(flags) do
-        local inventory = PLAYER_INVENTORY.inventories[flag]
-        if inventory then
-            self.initCustomInventorySortFn(inventory)
-        else
-            self.initSortFunction(sortByControl:GetParent().owner)
-        end
-    end
+    
     GetSortHeaders(sortByControl):AddHeader(qualityHeader)
     
     ZO_PreHookHandler(sortByControl, "OnEffectivelyShown", OnSortByControlEffectivelyShown)
@@ -459,6 +441,9 @@ function QualitySort.onAddonLoaded(eventCode, addonName)
     self:SetupOptions()
 
     ZO_QuickSlot.owner = QUICKSLOT_WINDOW
+    
+    -- Add support for custom tableOrderingFunction in sort keys
+    Prehook_TableOrderingFunction()
     
     for sortByControl, flags in pairs(self.sortByControls) do
         self.addSortByQuality(flags, sortByControl)

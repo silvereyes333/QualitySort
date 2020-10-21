@@ -302,10 +302,14 @@ local function Prehook_NameHeader_SetWidth(nameHeader, width)
     return true
 end
 local function Prehook_TableOrderingFunction()
+    local self = QualitySort
     local originalTableOrderingFunction = ZO_TableOrderingFunction
     ZO_TableOrderingFunction = function(entry1, entry2, sortKey, sortKeys, sortOrder)
-        if sortKeys and sortKeys[sortKey] and type(sortKeys[sortKey].tableOrderingFunction) == "function" then
-            return sortKeys[sortKey].tableOrderingFunction(entry1, entry2, sortKey, sortKeys, sortOrder)
+        if sortKey == "quality" then
+            if sortKeys["quality"] == nil then
+                sortKeys["quality"] = {}
+            end
+            return self.orderByItemQuality(entry1, entry2, sortKey, sortKeys, sortOrder)
         end
         return originalTableOrderingFunction(entry1, entry2, sortKey, sortKeys, sortOrder)
     end
@@ -413,12 +417,6 @@ function QualitySort.addSortByQuality(flags, sortByControl)
         ShiftRightAnchorOffsetX(child, nameHeader, shiftX, qualityHeader)
     end
     
-    local sortKeys = ZO_Inventory_GetDefaultHeaderSortKeys()
-    if not sortKeys.quality then
-        sortKeys.quality = {}
-    end
-    sortKeys.quality.tableOrderingFunction = QualitySort.orderByItemQuality
-    
     ZO_SortHeader_Initialize(qualityHeader, GetString(SI_MASTER_WRIT_DESCRIPTION_QUALITY), "quality",
                              ZO_SORT_ORDER_UP, TEXT_ALIGN_RIGHT, "ZoFontHeader")
     
@@ -429,7 +427,8 @@ end
 
 
 function QualitySort.printVersion()
-    d(QualitySort.name.." version "..QualitySort.version)
+    local self = QualitySort
+    d(self.name.." version "..self.version)
 end
 
 function QualitySort.onAddonLoaded(eventCode, addonName)

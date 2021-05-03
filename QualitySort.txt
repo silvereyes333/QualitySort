@@ -1,9 +1,9 @@
 ## Title: Quality Sort
 ## Author: silvereyes & Randactyl
-## Version: 2.4.3
-## APIVersion: 100033 100034
+## Version: 2.5.0
+## APIVersion: 100034 100035
 ## DependsOn: LibSavedVars>=50000 LibAddonMenu-2.0
-## OptionalDependsOn: wykkydsEquipmentLevel CraftingMaterialLevelDisplay
+## OptionalDependsOn: wykkydsEquipmentLevel CraftingMaterialLevelDisplay LibSets
 ## SavedVariables: QualitySort_Account
 ## SavedVariables: QualitySort_Character
 

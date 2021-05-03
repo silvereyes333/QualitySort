@@ -6,13 +6,14 @@ QUALITYSORT_CRAFTING_ENCHANTING  = 201
 QUALITYSORT_CRAFTING_IMPROVEMENT = 202
 QUALITYSORT_CRAFTING_REFINEMENT  = 203
 QUALITYSORT_CRAFTING_RETRAIT     = 204
+QUALITYSORT_COMPANION            = 205
 
 QUALITYSORT_DIR_DESC = 1
 QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.4.3",
+    version = "2.5.0",
     title   = "Quality Sort",
     author  = "silvereyes & Randactyl",
     sortOrders = {
@@ -75,11 +76,20 @@ QualitySort = {
         [ZO_SmithingTopLevelImprovementPanelInventorySortBy]            = QUALITYSORT_CRAFTING_IMPROVEMENT,
         [ZO_SmithingTopLevelRefinementPanelInventorySortBy]             = QUALITYSORT_CRAFTING_REFINEMENT,
         [ZO_RetraitStation_KeyboardTopLevelRetraitPanelInventorySortBy] = QUALITYSORT_CRAFTING_RETRAIT,
+        -- TODO: uncomment this after Update 30 Blackwood is live
+        -- [ZO_CompanionEquipment_Panel_KeyboardSortBy]                    = QUALITYSORT_COMPANION,
     },
+    sortByControlOwners = {},
     debugMode = false
 }
 
 local addon = QualitySort
+
+-- TODO: Remove the following if/then after Update 30 Blackwood is live
+if ZO_CompanionEquipment_Panel_KeyboardSortBy then
+    addon.sortByControls[ZO_CompanionEquipment_Panel_KeyboardSortBy] = QUALITYSORT_COMPANION
+    addon.sortByControlOwners[ZO_CompanionEquipment_Panel_KeyboardSortBy] = COMPANION_EQUIPMENT_KEYBOARD
+end
 
 function addon:Debug(text)
     if not self.debugMode then
@@ -132,6 +142,25 @@ local function GetExtendedData(data)
             writ6 = tonumber(writ6),
             vouchers = math.max(2, tonumber(string.format("%.0f", tonumber(vouchers)/10000)))
         }
+        -- remosito additions to sort by set station name
+        local snam
+        if extendedData.masterWrit.writ3 == 0 then -- its a provisioning master writ
+          snam = "_Prov"
+        elseif extendedData.masterWrit.writ4 == 0 then -- its an enchanting master writ
+          snam = "_Ench"
+        elseif extendedData.masterWrit.writ5 == 0 then -- its an alchemy master writ
+          snam = "_Alch"
+        else -- bs/cl/ww/jc master writ
+          if not LibSets or not LibSets.checkIfSetsAreLoadedProperly() then -- safety measure in case libset has not finished scanning and loading set info
+            snam = "_libsets not yet ready"
+          else
+            snam = LibSets.GetSetName(extendedData.masterWrit.writ4)  -- get set name
+            if snam == nil then -- in case sth went wrong and we get nil back..shouldn't happen
+              snam = "_unknown"
+            end
+          end
+        end
+        extendedData.masterWrit.writ4 = snam  -- overwrite writ4 with set/station name
     end
     if uniqueId ~= nil then
         extendedDataCache[uniqueId] = extendedData
@@ -200,20 +229,20 @@ function comparisonFunctions.masterWrit(item1, extData1, item2, extData2)
     if extData1.masterWrit == nil or extData2.masterWrit == nil then
         return
     end
-    local writ1 = extData1.masterWrit
-    local writ2 = extData2.masterWrit
-    if writ1.writ1 ~= writ2.writ1 then
-        return NilOrLessThan(writ1.writ1, writ2.writ1)
-    elseif writ1.writ2 ~= writ2.writ2 then
-        return NilOrLessThan(writ1.writ2, writ2.writ2)
-    elseif writ1.writ3 ~= writ2.writ3 then
-        return NilOrLessThan(writ1.writ3, writ2.writ3)
-    elseif writ1.writ4 ~= writ2.writ4 then
-        return NilOrLessThan(writ1.writ4, writ2.writ4)
-    elseif writ1.writ5 ~= writ2.writ5 then
-        return NilOrLessThan(writ1.writ5, writ2.writ5)
+    local data1 = extData1.masterWrit
+    local data2 = extData2.masterWrit
+    if data1.writ4 ~= data2.writ4 then
+        return NilOrLessThan(data1.writ4, data2.writ4)
+    elseif data1.writ2 ~= data2.writ2 then
+        return NilOrLessThan(data1.writ2, data2.writ2)
+    elseif data1.writ3 ~= data2.writ3 then
+        return NilOrLessThan(data1.writ3, data2.writ3)
+    elseif data1.writ1 ~= data2.writ1 then
+        return NilOrLessThan(data1.writ1, data2.writ1)
+    elseif data1.writ5 ~= data2.writ5 then
+        return NilOrLessThan(data1.writ5, data2.writ5)
     else
-        return NilOrLessThan(writ1.writ6, writ2.writ6)
+        return NilOrLessThan(data1.writ6, data2.writ6)
     end
 end
 function comparisonFunctions.name(item1, extData1, item2, extData2)
@@ -349,6 +378,9 @@ local function GetBagIdForInventoryType(inventoryType)
 end
 local function GetSortHeaders(sortByControl)
     local self = QualitySort
+    if self.sortByControlOwners[sortByControl] then
+        return self.sortByControlOwners[sortByControl].sortHeaders
+    end
     local flag = self.sortByControls[sortByControl]
     if type(flag) == "table" then
         flag = flag[1]

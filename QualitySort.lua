@@ -7,13 +7,14 @@ QUALITYSORT_CRAFTING_IMPROVEMENT = 202
 QUALITYSORT_CRAFTING_REFINEMENT  = 203
 QUALITYSORT_CRAFTING_RETRAIT     = 204
 QUALITYSORT_COMPANION            = 205
+QUALITYSORT_UNIVERSAL_DECON      = 206
 
 QUALITYSORT_DIR_DESC = 1
 QUALITYSORT_DIR_ASC  = 2
 
 QualitySort = {
     name    = "QualitySort",
-    version = "2.5.2",
+    version = "2.6.0",
     title   = "Quality Sort",
     author  = "silvereyes & Randactyl",
     sortOrders = {
@@ -70,26 +71,20 @@ QualitySort = {
         [ZO_GuildBankSortBy]                                            = INVENTORY_GUILD_BANK,
         [ZO_CraftBagSortBy]                                             = INVENTORY_CRAFT_BAG,
         [ZO_HouseBankSortBy]                                            = INVENTORY_HOUSE_BANK,
-        [ZO_QuickSlotSortBy]                                            = QUALITYSORT_INVENTORY_QUICKSLOT,
+        [ZO_QuickSlotSortBy or ZO_QuickSlot_Keyboard_TopLevelSortBy]    = QUALITYSORT_INVENTORY_QUICKSLOT,
         [ZO_SmithingTopLevelDeconstructionPanelInventorySortBy]         = QUALITYSORT_CRAFTING_DECON,
         [ZO_EnchantingTopLevelInventorySortBy]                          = QUALITYSORT_CRAFTING_ENCHANTING,
         [ZO_SmithingTopLevelImprovementPanelInventorySortBy]            = QUALITYSORT_CRAFTING_IMPROVEMENT,
         [ZO_SmithingTopLevelRefinementPanelInventorySortBy]             = QUALITYSORT_CRAFTING_REFINEMENT,
         [ZO_RetraitStation_KeyboardTopLevelRetraitPanelInventorySortBy] = QUALITYSORT_CRAFTING_RETRAIT,
-        -- TODO: uncomment this after Update 30 Blackwood is live
-        -- [ZO_CompanionEquipment_Panel_KeyboardSortBy]                    = QUALITYSORT_COMPANION,
+        [ZO_CompanionEquipment_Panel_KeyboardSortBy]                    = QUALITYSORT_COMPANION,
+        [UNIVERSAL_DECONSTRUCTION.deconstructionPanelControl:GetNamedChild("Inventory"):GetNamedChild("SortBy")] = QUALITYSORT_UNIVERSAL_DECON,
     },
     sortByControlOwners = {},
     debugMode = false
 }
 
 local addon = QualitySort
-
--- TODO: Remove the following if/then after Update 30 Blackwood is live
-if ZO_CompanionEquipment_Panel_KeyboardSortBy then
-    addon.sortByControls[ZO_CompanionEquipment_Panel_KeyboardSortBy] = QUALITYSORT_COMPANION
-    addon.sortByControlOwners[ZO_CompanionEquipment_Panel_KeyboardSortBy] = COMPANION_EQUIPMENT_KEYBOARD
-end
 
 function addon:Debug(text)
     if not self.debugMode then
@@ -389,6 +384,7 @@ local function GetSortHeaders(sortByControl)
     if inventory then
         return inventory.sortHeaders
     end
+    local controlName = sortByControl:GetName()
     inventory = sortByControl:GetParent()
     local owner = inventory.owner
     return owner.sortHeaders
@@ -471,7 +467,12 @@ function QualitySort.onAddonLoaded(eventCode, addonName)
     
     self:SetupOptions()
 
-    ZO_QuickSlot.owner = QUICKSLOT_WINDOW
+    if ZO_QuickSlot then
+        ZO_QuickSlot.owner = QUICKSLOT_WINDOW
+    else
+        ZO_QuickSlot_Keyboard_TopLevel.owner = QUICKSLOT_KEYBOARD
+    end
+    ZO_CompanionEquipment_Panel_Keyboard.owner = COMPANION_EQUIPMENT_KEYBOARD
     
     -- Add support for custom tableOrderingFunction in sort keys
     Prehook_TableOrderingFunction()
